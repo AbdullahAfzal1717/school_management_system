@@ -29,5 +29,130 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  teacherProfile TeacherProfile?
+  studentProfile StudentProfile?
+  parentProfile  ParentProfile?
+
   @@index([role])
+}
+
+model TeacherProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  employeeId String   @unique
+  phone      String?
+  address    String?
+  photoUrl   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teachingAssignments TeachingAssignment[]
+  supervisedClasses   SchoolClass[]        @relation("ClassSupervisor")
+}
+
+model StudentProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  studentNumber String   @unique
+  phone         String?
+  address       String?
+  photoUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+  guardians   ParentStudent[]
+}
+
+model ParentProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  phone     String?
+  address   String?
+  photoUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children ParentStudent[]
+}
+
+model AcademicYear {
+  id                  String               @id @default(cuid())
+  name                String               @unique
+  startDate           DateTime
+  endDate             DateTime
+  isCurrent           Boolean              @default(false)
+  classes             SchoolClass[]
+  enrollments         Enrollment[]
+  teachingAssignments TeachingAssignment[]
+}
+
+model SchoolClass {
+  id             String  @id @default(cuid())
+  name           String
+  grade          Int
+  capacity       Int
+  academicYearId String
+  supervisorId   String?
+
+  academicYear        AcademicYear         @relation(fields: [academicYearId], references: [id])
+  supervisor          TeacherProfile?      @relation("ClassSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  enrollments         Enrollment[]
+  teachingAssignments TeachingAssignment[]
+
+  @@unique([name, academicYearId])
+  @@index([academicYearId])
+}
+
+model Subject {
+  id                  String               @id @default(cuid())
+  name                String               @unique
+  teachingAssignments TeachingAssignment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model Enrollment {
+  id             String   @id @default(cuid())
+  studentId      String
+  schoolClassId  String
+  academicYearId String
+  enrolledAt     DateTime @default(now())
+
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  schoolClass  SchoolClass    @relation(fields: [schoolClassId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear   @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, academicYearId])
+  @@index([schoolClassId])
+}
+
+model ParentStudent {
+  parentId     String
+  studentId    String
+  relationship String?
+
+  parent  ParentProfile  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, studentId])
+}
+
+model TeachingAssignment {
+  id             String @id @default(cuid())
+  teacherId      String
+  subjectId      String
+  schoolClassId  String
+  academicYearId String
+
+  teacher      TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject      Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  schoolClass  SchoolClass    @relation(fields: [schoolClassId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear   @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId, schoolClassId, academicYearId])
+  @@index([schoolClassId, academicYearId])
 }
