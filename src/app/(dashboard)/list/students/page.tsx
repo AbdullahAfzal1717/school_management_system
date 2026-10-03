@@ -2,8 +2,9 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { role } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -54,6 +55,8 @@ const columns = [
 ];
 
 const StudentsListPage = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role || "";
   const studentProfiles = await prisma.studentProfile.findMany({
     include: {
       user: true,
@@ -112,7 +115,7 @@ const StudentsListPage = async () => {
           >
             <Image src="/view.png" alt="View student" width={16} height={16} />
           </Link>
-          {role === "admin" && (
+          {role && role === "ADMIN" && (
             <FormModal table="student" type="delete" id={item.id} />
           )}
         </div>
@@ -134,7 +137,7 @@ const StudentsListPage = async () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-AbYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && <FormModal type="create" table="student" />}
+            {role && role === "ADMIN" && <FormModal type="create" table="student" />}
           </div>
         </div>
       </div>

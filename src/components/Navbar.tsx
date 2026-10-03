@@ -1,6 +1,11 @@
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
 
-const Navbar = () => {
+const Navbar = async () => {
+  const session = await getServerSession(authOptions);
+  const name = session?.user?.name || "";
+  const role = session?.user?.role || "";
   return (
     <div className="flex justify-between items-center p-4 ">
       {/* Search Bar */}
@@ -27,8 +32,8 @@ const Navbar = () => {
           </div>
         </div>
         <div className="flex flex-col">
-          <span className="text-xs leading-3 font-medium">Abdullah</span>
-          <span className="text-[10px] text-gray-500 text-right">Admin</span>
+          <span className="text-xs leading-3 font-medium">{name}</span>
+          <span className="text-[10px] text-gray-500 text-right capitalize">{role}</span>
         </div>
         <Image
           src="/avatar.png"

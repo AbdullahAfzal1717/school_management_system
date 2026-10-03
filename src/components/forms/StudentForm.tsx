@@ -11,7 +11,10 @@ const schema = z.object({
   email: z.string().email({ message: "Email is required" }),
   password: z
     .string()
-    .min(8, { message: "Password should be atleast 8 characters long" }),
+    .optional()
+    .refine((val) => !val || val.length >= 8, {
+      message: "Password should be atleast 8 characters long",
+    }),
   firstName: z.string().min(1, { message: "First name is required" }),
   lastName: z.string().min(1, { message: "Last name is required" }),
   studentNumber: z.string().min(1, { message: "Student number is required" }),
@@ -41,10 +44,21 @@ const StudentForm = ({
 
   const onSubmit = handleSubmit(async (formData) => {
     setServerError(null);
+    const payload =
+      type === "create"
+        ? {
+            ...formData,
+            password: formData.password ?? "",
+          }
+        : {
+            ...formData,
+            password: formData.password || undefined,
+            id: data?.id ?? "",
+          };
     const result =
       type === "create"
-        ? await createStudent(formData)
-        : await updateStudent({ ...formData, id: data?.id ?? "" });
+        ? await createStudent(payload as any)
+        : await updateStudent(payload as any);
 
     if ("error" in result) {
       setServerError(result.error);
@@ -71,7 +85,9 @@ const StudentForm = ({
           error={errors?.email}
         />
         <InputField
-          label="Password"
+          label={
+            type === "edit" ? "Password (leave blank to keep)" : "Password"
+          }
           name="password"
           type="password"
           defaultValue={data?.password}

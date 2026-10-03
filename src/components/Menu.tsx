@@ -1,4 +1,5 @@
-import { role } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -110,14 +111,16 @@ const menuItems = [
       {
         icon: "/logout.png",
         label: "Logout",
-        href: "/logout",
+        href: "/api/auth/signout",
         visible: ["admin", "teacher", "student", "parent"],
       },
     ],
   },
 ];
 
-const Menu = () => {
+const Menu = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role ?? "";
   return (
     <div className="mt-4 text-sm ">
       {menuItems.map((i) => (

@@ -18,8 +18,15 @@ const createStudentSchema = z.object({
   address: z.string().optional(),
 });
 
-const updateStudentSchema = createStudentSchema.extend({
+const updateStudentSchema = z.object({
   id: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().optional(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  studentNumber: z.string().min(1),
+  phone: z.string().optional(),
+  address: z.string().optional(),
 });
 
 export type CreateStudentInput = z.infer<typeof createStudentSchema>;
@@ -114,7 +121,20 @@ export async function updateStudent(input: UpdateStudentInput) {
   } = parsedInput.data;
 
   try {
-    const passwordHash = await bcrypt.hash(password, 12);
+    const userUpdate: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      passwordHash?: string;
+    } = {
+      email,
+      firstName,
+      lastName,
+    };
+
+    if (password && password.trim().length > 0) {
+      userUpdate.passwordHash = await bcrypt.hash(password, 12);
+    }
 
     await prisma.studentProfile.update({
       where: { id },
@@ -123,12 +143,7 @@ export async function updateStudent(input: UpdateStudentInput) {
         phone: phone || null,
         address: address || null,
         user: {
-          update: {
-            email,
-            passwordHash,
-            firstName,
-            lastName,
-          },
+          update: userUpdate,
         },
       },
     });
