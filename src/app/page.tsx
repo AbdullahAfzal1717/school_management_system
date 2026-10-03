@@ -1,7 +1,15 @@
-const Homepage = () => {
-  return (
-    <div className=''>Homepage</div>
-  )
-}
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+import { authOptions, dashboardForRole } from "@/lib/auth";
 
-export default Homepage
+const Homepage = async () => {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.role) {
+    redirect("/sign-in");
+  }
+
+  redirect(dashboardForRole[session.user.role]);
+};
+
+export default Homepage;

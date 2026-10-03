@@ -3,12 +3,14 @@
 import Image from "next/image";
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { deleteStudent } from "@/app/actions/student";
 
-const TeacherForm = dynamic(() => import("./forms/TeacherForm"),{
-  loading:()=><h1>Loading....</h1>
+const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
+  loading: () => <h1>Loading....</h1>,
 });
-const StudentForm = dynamic(() => import("./forms/StudentForm"),{
-  loading:()=><h1>Loading....</h1>
+const StudentForm = dynamic(() => import("./forms/StudentForm"), {
+  loading: () => <h1>Loading....</h1>,
 });
 const ParentForm = dynamic(() => import("./forms/ParentForm"));
 const SubjectForm = dynamic(() => import("./forms/SubjectForm"));
@@ -21,12 +23,17 @@ const AttendenceForm = dynamic(() => import("./forms/AttendenceForm"));
 const EventForm = dynamic(() => import("./forms/EventForm"));
 const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"));
 
-
 const forms: {
-  [key: string]: (type: "create" | "edit", data?: any) => JSX.Element;
+  [key: string]: (
+    type: "create" | "edit",
+    data?: any,
+    onSuccess?: () => void,
+  ) => JSX.Element;
 } = {
   teacher: (type, data) => <TeacherForm type={type} data={data} />,
-  student: (type, data) => <StudentForm type={type} data={data} />,
+  student: (type, data, onSuccess) => (
+    <StudentForm type={type} data={data} onSuccess={onSuccess} />
+  ),
   parent: (type, data) => <ParentForm type={type} data={data} />,
   subject: (type, data) => <SubjectForm type={type} data={data} />,
   class: (type, data) => <ClassForm type={type} data={data} />,
@@ -62,7 +69,7 @@ const FormModal = ({
   type: "create" | "edit" | "delete";
 
   data?: any;
-  id?: number;
+  id?: string | number;
 }) => {
   const size = type === "create" ? "w-7 h-7" : "w-8 h-8";
 
@@ -70,24 +77,49 @@ const FormModal = ({
     type === "create"
       ? "bg-AbYellow"
       : type === "edit"
-      ? "bg-AbSky"
-      : "bg-AbPurple";
+        ? "bg-AbSky"
+        : "bg-AbPurple";
 
   const [open, setOpen] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleDelete = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setServerError(null);
+
+    if (table !== "student" || typeof id !== "string") {
+      setServerError("Delete is not available for this resource yet.");
+      return;
+    }
+
+    const result = await deleteStudent(id);
+
+    if ("error" in result) {
+      setServerError(result.error);
+      return;
+    }
+
+    setOpen(false);
+    router.refresh();
+  };
 
   const Form = () => {
     return type === "delete" && id ? (
-      <form action="" className=" p-4 flex flex-col gap-4">
+      <form onSubmit={handleDelete} className="p-4 flex flex-col gap-4">
         <span className="text-center font-medium">
           {" "}
           All data will be lost are you sure you want to delete this {table}?
         </span>
+        {serverError && (
+          <p className="text-center text-sm text-red-500">{serverError}</p>
+        )}
         <button className=" bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
           Delete
         </button>
       </form>
     ) : type === "create" || type === "edit" ? (
-      forms[table](type, data)
+      forms[table](type, data, () => setOpen(false))
     ) : (
       "Form not found!"
     );

@@ -2,20 +2,23 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { role, studentsData } from "@/lib/data";
+import { role } from "@/lib/data";
+import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 type Student = {
-  id: number;
+  id: string;
   studentId: string;
   name: string;
   email?: string;
-  photo: string;
+  photo?: string;
   phone?: string;
   grade: number;
   class: string;
-  address: string;
+  address?: string;
 };
 
 const columns = [
@@ -50,7 +53,35 @@ const columns = [
   },
 ];
 
-const StudentsListPage = () => {
+const StudentsListPage = async () => {
+  const studentProfiles = await prisma.studentProfile.findMany({
+    include: {
+      user: true,
+      enrollments: {
+        include: { schoolClass: true },
+        orderBy: { enrolledAt: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: { studentNumber: "asc" },
+  });
+
+  const students: Student[] = studentProfiles.map((profile) => {
+    const enrollment = profile.enrollments[0];
+
+    return {
+      id: profile.id,
+      studentId: profile.studentNumber,
+      name: `${profile.user.firstName} ${profile.user.lastName}`,
+      email: profile.user.email,
+      photo: profile.photoUrl ?? undefined,
+      phone: profile.phone ?? undefined,
+      grade: enrollment?.schoolClass.grade ?? 0,
+      class: enrollment?.schoolClass.name ?? "Not enrolled",
+      address: profile.address ?? undefined,
+    };
+  });
+
   const renderRow = (item: Student) => (
     <tr
       key={item.id}
@@ -58,7 +89,7 @@ const StudentsListPage = () => {
     >
       <td className="flex items-center gap-4 p-4">
         <Image
-          src={item.photo}
+          src={item.photo ?? "/avatar.png"}
           alt=""
           width={40}
           height={40}
@@ -75,9 +106,12 @@ const StudentsListPage = () => {
       <td className="hidden lg:table-cell">{item.address}</td>
       <td>
         <div className="flex gap-2 items-center">
-          <button className="w-7 h-7 flex items-center justify-center rounded-full bg-AbSky">
-            <Image src="/view.png" alt="" width={16} height={16} />
-          </button>
+          <Link
+            href={`/list/students/${item.id}`}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-AbSky"
+          >
+            <Image src="/view.png" alt="View student" width={16} height={16} />
+          </Link>
           {role === "admin" && (
             <FormModal table="student" type="delete" id={item.id} />
           )}
@@ -105,7 +139,7 @@ const StudentsListPage = () => {
         </div>
       </div>
       {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={studentsData} />
+      <Table columns={columns} renderRow={renderRow} data={students} />
       {/* Pagination */}
       <Pagination />
     </div>
