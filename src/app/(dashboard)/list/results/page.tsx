@@ -2,19 +2,23 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {  resultsData, role } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
-import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 type Result = {
-  id: number;
+  id: string;
   subject: string;
-  class: string;
+  student: string;
+  score: number;
+  schoolClass: string;
   teacher: string;
-  student:string;
-  type:"exam"|"assignment";
-  date:string;
-  score:number;
+  date: string;
+  examId: string;
+  studentId: string;
 };
 
 const columns = [
@@ -26,18 +30,17 @@ const columns = [
     header: "Student",
     accessor: "student",
     className: "hidden md:table-cell",
-  }, 
-   {
+  },
+  {
     header: "Score",
     accessor: "score",
     className: "hidden md:table-cell",
   },
-
   {
     header: "Class",
     accessor: "class",
     className: "hidden lg:table-cell",
-  }, 
+  },
   {
     header: "Teacher",
     accessor: "teacher",
@@ -54,25 +57,66 @@ const columns = [
   },
 ];
 
-const ResultsListPage = () => {
+const ResultsListPage = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role || "";
+
+  const results = await prisma.examResult.findMany({
+    include: {
+      exam: {
+        include: {
+          subject: true,
+          class: true,
+          teacher: { include: { user: true } },
+        },
+      },
+      student: { include: { user: true } },
+    },
+    orderBy: { exam: { date: "asc" } },
+  });
+
+  const data: Result[] = results.map((result) => ({
+    id: result.id,
+    subject: result.exam.subject.name,
+    student: `${result.student.user.firstName} ${result.student.user.lastName}`,
+    score: result.score,
+    schoolClass: result.exam.class.name,
+    teacher: `${result.exam.teacher.user.firstName} ${result.exam.teacher.user.lastName}`,
+    date: result.exam.date.toISOString().slice(0, 10),
+    examId: result.examId,
+    studentId: result.studentId,
+  }));
+
   const renderRow = (item: Result) => (
     <tr
       key={item.id}
       className="border-b border-gray-200 even:bg-slate-50 hover:bg-AbPurpleLight text-sm"
     >
       <td className="flex items-center gap-4 p-4">
-        <h3 className="font-semibold">{item.subject}</h3>
+        <div className="flex flex-col">
+          <h3 className="font-semibold">{item.subject}</h3>
+          <p className="text-xs text-gray-500 md:hidden">{item.student}</p>
+        </div>
       </td>
       <td className="hidden md:table-cell">{item.student}</td>
       <td className="hidden md:table-cell">{item.score}</td>
-      <td className="hidden lg:table-cell">{item.class}</td>
+      <td className="hidden lg:table-cell">{item.schoolClass}</td>
       <td className="hidden lg:table-cell">{item.teacher}</td>
       <td className="hidden lg:table-cell">{item.date}</td>
       <td>
         <div className="flex gap-2 items-center">
-        {role === "admin" && (
+          {role && role === "ADMIN" && (
             <>
-              <FormModal type="edit" table="result" data={item} />
+              <FormModal
+                type="edit"
+                table="result"
+                data={{
+                  id: item.id,
+                  examId: item.examId,
+                  studentId: item.studentId,
+                  score: item.score,
+                }}
+              />
               <FormModal type="delete" table="result" id={item.id} />
             </>
           )}
@@ -95,14 +139,14 @@ const ResultsListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-AbYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && (
-           <FormModal type="create" table="result"  />
-          )}
+            {role && role === "ADMIN" && (
+              <FormModal type="create" table="result" />
+            )}
           </div>
         </div>
       </div>
       {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={resultsData} />
+      <Table columns={columns} renderRow={renderRow} data={data} />
       {/* Pagination */}
       <Pagination />
     </div>

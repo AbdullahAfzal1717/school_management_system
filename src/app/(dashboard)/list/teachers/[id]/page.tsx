@@ -2,10 +2,36 @@ import Announcements from "@/components/Announcements";
 import BigCalendar from "@/components/BigCalendar";
 import FormModal from "@/components/FormModal";
 import PerformanceChart from "@/components/PerformanceChart";
+import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-const SingleTeacherPage = () => {
+export const dynamic = "force-dynamic";
+
+const SingleTeacherPage = async ({ params }: { params: { id: string } }) => {
+  const teacher = await prisma.teacherProfile.findUnique({
+    where: { id: params.id },
+    include: {
+      user: true,
+      teachingAssignments: {
+        include: { subject: true, schoolClass: true },
+      },
+    },
+  });
+
+  if (!teacher) {
+    notFound();
+  }
+
+  const fullName = `${teacher.user.firstName} ${teacher.user.lastName}`;
+  const subjects = Array.from(
+    new Set(teacher.teachingAssignments.map((a) => a.subject.name)),
+  );
+  const classes = Array.from(
+    new Set(teacher.teachingAssignments.map((a) => a.schoolClass.name)),
+  );
+
   return (
     <div className="flex flex-col xl:flex-row gap-4 p-4 flex-1">
       {/* Left */}
@@ -17,8 +43,8 @@ const SingleTeacherPage = () => {
             {/* Image Section */}
             <div className="w-1/3">
               <Image
-                src="https://images.pexels.com/photos/2888150/pexels-photo-2888150.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt=""
+                src={teacher.photoUrl ?? "/avatar.png"}
+                alt={fullName}
                 width={144}
                 height={144}
                 className="w-36 h-36 rounded-full object-cover"
@@ -27,45 +53,41 @@ const SingleTeacherPage = () => {
             {/* TextSection */}
             <div className="w-2/3 flex flex-col justify-between gap-4">
               <div className="flex items-center gap-4">
-                {" "}
-                <h1 className="text-xl font-semibold">John Doe</h1>
+                <h1 className="text-xl font-semibold">{fullName}</h1>
                 <FormModal
                   type="edit"
                   table="teacher"
                   data={{
-                    id: 1,
-                    teacherId: "1234567890",
-                    username: "John Doe",
-                    email: "john@doe.com",
-                    photo:
-                      "https://images.pexels.com/photos/2888150/pexels-photo-2888150.jpeg?auto=compress&cs=tinysrgb&w=1200",
-                    phone: "1234567890",
-                    subjects: ["Math", "Geometry"],
-                    classes: ["1B", "2A", "3C"],
-                    address: "123 Main St, Anytown, USA",
+                    id: teacher.id,
+                    email: teacher.user.email,
+                    firstName: teacher.user.firstName,
+                    lastName: teacher.user.lastName,
+                    employeeId: teacher.employeeId,
+                    phone: teacher.phone ?? "",
+                    address: teacher.address ?? "",
                   }}
                 />
               </div>
               <p className="text-sm text-gray-500">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                Similique
+                Employee ID: {teacher.employeeId}
               </p>
               <div className="flex items-center justify-between flex-wrap gap-2 text-xs font-medium">
                 <div className="flex items-center w-full md:w-1/3 gap-2 xl:w-full 2xl:w-1/3">
-                  <Image src="/blood.png" alt="" width={14} height={14} />
-                  <span>A+</span>
+                  <Image src="/mail.png" alt="Email" width={14} height={14} />
+                  <span>{teacher.user.email}</span>
                 </div>
                 <div className="flex items-center w-full md:w-1/3 gap-2 xl:w-full 2xl:w-1/3">
-                  <Image src="/date.png" alt="" width={14} height={14} />
-                  <span>April 22</span>
+                  <Image src="/phone.png" alt="Phone" width={14} height={14} />
+                  <span>{teacher.phone ?? "No phone"}</span>
                 </div>
                 <div className="flex items-center w-full md:w-1/3 gap-2 xl:w-full 2xl:w-1/3">
-                  <Image src="/mail.png" alt="" width={14} height={14} />
-                  <span>user+@gmail.com</span>
-                </div>
-                <div className="flex items-center w-full md:w-1/3 gap-2 xl:w-full 2xl:w-1/3">
-                  <Image src="/phone.png" alt="" width={14} height={14} />
-                  <span>123 4567 890</span>
+                  <Image
+                    src="/profile.png"
+                    alt="Address"
+                    width={14}
+                    height={14}
+                  />
+                  <span>{teacher.address ?? "No address"}</span>
                 </div>
               </div>
             </div>
@@ -96,8 +118,8 @@ const SingleTeacherPage = () => {
                 className="w-6 h-6"
               />
               <div className="">
-                <h1 className="text-xl font-semibold"> 2</h1>
-                <span className="text-sm text-gray-400">Branches</span>
+                <h1 className="text-xl font-semibold">{classes.length}</h1>
+                <span className="text-sm text-gray-400">Classes</span>
               </div>
             </div>
             {/* Card */}
@@ -110,8 +132,8 @@ const SingleTeacherPage = () => {
                 className="w-6 h-6"
               />
               <div className="">
-                <h1 className="text-xl font-semibold"> 6</h1>
-                <span className="text-sm text-gray-400">Lessons</span>
+                <h1 className="text-xl font-semibold">{subjects.length}</h1>
+                <span className="text-sm text-gray-400">Subjects</span>
               </div>
             </div>
             {/* Card */}
@@ -124,8 +146,10 @@ const SingleTeacherPage = () => {
                 className="w-6 h-6"
               />
               <div className="">
-                <h1 className="text-xl font-semibold"> 6</h1>
-                <span className="text-sm text-gray-400">Classes</span>
+                <h1 className="text-xl font-semibold">
+                  {teacher.teachingAssignments.length}
+                </h1>
+                <span className="text-sm text-gray-400">Assignments</span>
               </div>
             </div>
           </div>

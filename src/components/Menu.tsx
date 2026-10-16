@@ -2,6 +2,7 @@ import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
+import LogoutButton from "./LogoutButton";
 
 const menuItems = [
   {
@@ -111,7 +112,7 @@ const menuItems = [
       {
         icon: "/logout.png",
         label: "Logout",
-        href: "/api/auth/signout",
+        href: "#",
         visible: ["admin", "teacher", "student", "parent"],
       },
     ],
@@ -131,6 +132,9 @@ const Menu = async () => {
           {i.items.map((item) => {
 
             if(item.visible.includes(role)){
+              if(item.label === "Logout"){
+                return <LogoutButton key={item.label} />;
+              }
               return(
                 <Link
               href={item.href}

@@ -2,12 +2,15 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { role, subjectsData } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
-import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 type Subject = {
-  id: number;
+  id: string;
   name: string;
   teachers: string[];
 };
@@ -29,7 +32,35 @@ const columns = [
   },
 ];
 
-const SubjectsListPage = () => {
+const SubjectsListPage = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role || "";
+
+  const subjects = await prisma.subject.findMany({
+    include: {
+      teachingAssignments: {
+        include: { teacher: { include: { user: true } } },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const data: Subject[] = subjects.map((subject) => {
+    const teachers = Array.from(
+      new Set(
+        subject.teachingAssignments.map(
+          (a) => `${a.teacher.user.firstName} ${a.teacher.user.lastName}`,
+        ),
+      ),
+    );
+
+    return {
+      id: subject.id,
+      name: subject.name,
+      teachers,
+    };
+  });
+
   const renderRow = (item: Subject) => (
     <tr
       key={item.id}
@@ -41,7 +72,7 @@ const SubjectsListPage = () => {
       <td className="hidden md:table-cell">{item.teachers.join(",")}</td>
       <td>
         <div className="flex gap-2 items-center">
-        {role === "admin" && (
+          {role && role === "ADMIN" && (
             <>
               <FormModal type="edit" table="subject" data={item} />
               <FormModal type="delete" table="subject" id={item.id} />
@@ -66,14 +97,14 @@ const SubjectsListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-AbYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && (
-                <FormModal type="create" table="subject" />
+            {role && role === "ADMIN" && (
+              <FormModal type="create" table="subject" />
             )}
           </div>
         </div>
       </div>
       {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={subjectsData} />
+      <Table columns={columns} renderRow={renderRow} data={data} />
       {/* Pagination */}
       <Pagination />
     </div>

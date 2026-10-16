@@ -2,15 +2,19 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { parentsData, role } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
-import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 type Parent = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   students: string[];
+  studentIds: string[];
   phone: string;
   address: string;
 };
@@ -42,7 +46,42 @@ const columns = [
   },
 ];
 
-const ParentsListPage = () => {
+const ParentsListPage = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role || "";
+
+  const parentProfiles = await prisma.parentProfile.findMany({
+    include: {
+      user: true,
+      children: {
+        include: {
+          student: {
+            include: { user: true },
+          },
+        },
+      },
+    },
+    orderBy: { user: { firstName: "asc" } },
+  });
+
+  const parents: Parent[] = parentProfiles.map((profile) => {
+    const studentIds = profile.children.map((link) => link.studentId);
+    const studentNames = profile.children.map(
+      (link) =>
+        `${link.student.user.firstName} ${link.student.user.lastName}`,
+    );
+
+    return {
+      id: profile.id,
+      name: `${profile.user.firstName} ${profile.user.lastName}`,
+      email: profile.user.email,
+      students: studentNames,
+      studentIds,
+      phone: profile.phone ?? "",
+      address: profile.address ?? "",
+    };
+  });
+
   const renderRow = (item: Parent) => (
     <tr
       key={item.id}
@@ -59,7 +98,7 @@ const ParentsListPage = () => {
       <td className="hidden lg:table-cell">{item.address}</td>
       <td>
         <div className="flex gap-2 items-center">
-          {role === "admin" && (
+          {role && role === "ADMIN" && (
             <>
               <FormModal type="edit" table="parent" data={item} />
               <FormModal type="delete" table="parent" id={item.id} />
@@ -84,18 +123,14 @@ const ParentsListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-AbYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && (
-            
-              <>
-                <FormModal type="create" table="parent" />
-              </>
-          
+            {role && role === "ADMIN" && (
+              <FormModal type="create" table="parent" />
             )}
           </div>
         </div>
       </div>
       {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={parentsData} />
+      <Table columns={columns} renderRow={renderRow} data={parents} />
       {/* Pagination */}
       <Pagination />
     </div>

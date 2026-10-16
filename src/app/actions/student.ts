@@ -16,6 +16,7 @@ const createStudentSchema = z.object({
   studentNumber: z.string().min(1),
   phone: z.string().optional(),
   address: z.string().optional(),
+  schoolClassId: z.string().optional(),
 });
 
 const updateStudentSchema = z.object({
@@ -27,7 +28,23 @@ const updateStudentSchema = z.object({
   studentNumber: z.string().min(1),
   phone: z.string().optional(),
   address: z.string().optional(),
+  schoolClassId: z.string().optional(),
 });
+
+export async function getStudentFormOptions() {
+  const [classes, currentYear] = await Promise.all([
+    prisma.schoolClass.findMany({
+      orderBy: [{ grade: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, grade: true },
+    }),
+    prisma.academicYear.findFirst({ where: { isCurrent: true } }),
+  ]);
+
+  return {
+    classes,
+    currentAcademicYearId: currentYear?.id ?? null,
+  };
+}
 
 export type CreateStudentInput = z.infer<typeof createStudentSchema>;
 
@@ -62,10 +79,15 @@ export async function createStudent(input: CreateStudentInput) {
     studentNumber,
     phone,
     address,
+    schoolClassId,
   } = parsedInput.data;
 
   try {
     const passwordHash = await bcrypt.hash(password, 12);
+
+    const currentYear = schoolClassId
+      ? await prisma.academicYear.findFirst({ where: { isCurrent: true } })
+      : null;
 
     await prisma.user.create({
       data: {
@@ -79,6 +101,15 @@ export async function createStudent(input: CreateStudentInput) {
             studentNumber,
             phone: phone || null,
             address: address || null,
+            enrollments:
+              schoolClassId && currentYear
+                ? {
+                    create: {
+                      schoolClassId,
+                      academicYearId: currentYear.id,
+                    },
+                  }
+                : undefined,
           },
         },
       },
@@ -118,6 +149,7 @@ export async function updateStudent(input: UpdateStudentInput) {
     studentNumber,
     phone,
     address,
+    schoolClassId,
   } = parsedInput.data;
 
   try {
@@ -136,16 +168,47 @@ export async function updateStudent(input: UpdateStudentInput) {
       userUpdate.passwordHash = await bcrypt.hash(password, 12);
     }
 
-    await prisma.studentProfile.update({
-      where: { id },
-      data: {
-        studentNumber,
-        phone: phone || null,
-        address: address || null,
-        user: {
-          update: userUpdate,
+    const currentYear = await prisma.academicYear.findFirst({
+      where: { isCurrent: true },
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.studentProfile.update({
+        where: { id },
+        data: {
+          studentNumber,
+          phone: phone || null,
+          address: address || null,
+          user: {
+            update: userUpdate,
+          },
         },
-      },
+      });
+
+      if (!currentYear) {
+        return;
+      }
+
+      if (schoolClassId) {
+        await tx.enrollment.upsert({
+          where: {
+            studentId_academicYearId: {
+              studentId: id,
+              academicYearId: currentYear.id,
+            },
+          },
+          update: { schoolClassId },
+          create: {
+            studentId: id,
+            schoolClassId,
+            academicYearId: currentYear.id,
+          },
+        });
+      } else {
+        await tx.enrollment.deleteMany({
+          where: { studentId: id, academicYearId: currentYear.id },
+        });
+      }
     });
   } catch (error) {
     console.error("Failed to update student", error);

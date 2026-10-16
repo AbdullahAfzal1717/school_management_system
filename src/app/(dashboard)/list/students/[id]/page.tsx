@@ -62,6 +62,7 @@ const SingleStudentPage = async ({ params }: { params: { id: string } }) => {
                     studentNumber: student.studentNumber,
                     phone: student.phone ?? "",
                     address: student.address ?? "",
+                    schoolClassId: student.enrollments[0]?.schoolClassId ?? "",
                   }}
                 />
               </div>

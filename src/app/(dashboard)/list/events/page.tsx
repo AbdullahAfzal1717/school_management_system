@@ -2,17 +2,22 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import {  eventsData, role } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
-import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 type Event = {
-  id: number;
+  id: string;
   title: string;
-  class: string;
-  date:string;
-  startTime:string;
-  endTime:string;
+  schoolClass: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  classId: string;
 };
 
 const columns = [
@@ -24,8 +29,7 @@ const columns = [
     header: "Class",
     accessor: "class",
     className: "hidden md:table-cell",
-  }, 
-  
+  },
   {
     header: "Date",
     accessor: "date",
@@ -35,7 +39,8 @@ const columns = [
     header: "Start Time",
     accessor: "startDate",
     className: "hidden lg:table-cell",
-  },  {
+  },
+  {
     header: "End Time",
     accessor: "endDate",
     className: "hidden lg:table-cell",
@@ -46,7 +51,26 @@ const columns = [
   },
 ];
 
-const EventsListPage = () => {
+const EventsListPage = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role || "";
+
+  const events = await prisma.event.findMany({
+    include: { class: true },
+    orderBy: { date: "asc" },
+  });
+
+  const data: Event[] = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    schoolClass: event.class?.name ?? "All classes",
+    date: event.date.toISOString().slice(0, 10),
+    startTime: event.startTime,
+    endTime: event.endTime,
+    description: event.description ?? "",
+    classId: event.classId ?? "",
+  }));
+
   const renderRow = (item: Event) => (
     <tr
       key={item.id}
@@ -55,15 +79,27 @@ const EventsListPage = () => {
       <td className="flex items-center gap-4 p-4">
         <h3 className="font-semibold">{item.title}</h3>
       </td>
-      <td className="hidden md:table-cell">{item.class}</td>
+      <td className="hidden md:table-cell">{item.schoolClass}</td>
       <td className="hidden md:table-cell">{item.date}</td>
       <td className="hidden lg:table-cell">{item.startTime}</td>
       <td className="hidden lg:table-cell">{item.endTime}</td>
       <td>
         <div className="flex gap-2 items-center">
-        {role === "admin" && (
+          {role && role === "ADMIN" && (
             <>
-              <FormModal type="edit" table="event" data={item} />
+              <FormModal
+                type="edit"
+                table="event"
+                data={{
+                  id: item.id,
+                  title: item.title,
+                  description: item.description,
+                  date: item.date,
+                  startTime: item.startTime,
+                  endTime: item.endTime,
+                  classId: item.classId,
+                }}
+              />
               <FormModal type="delete" table="event" id={item.id} />
             </>
           )}
@@ -86,14 +122,14 @@ const EventsListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-AbYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && (
-              <FormModal type="create" table="event"  />
-          )}
+            {role && role === "ADMIN" && (
+              <FormModal type="create" table="event" />
+            )}
           </div>
         </div>
       </div>
       {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={eventsData} />
+      <Table columns={columns} renderRow={renderRow} data={data} />
       {/* Pagination */}
       <Pagination />
     </div>

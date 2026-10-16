@@ -1,7 +1,12 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, UserRole } from "../src/generated/prisma/client";
+import {
+  PrismaClient,
+  UserRole,
+  Weekday,
+  AttendanceStatus,
+} from "../src/generated/prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -246,6 +251,123 @@ async function main() {
       academicYearId: academicYear.id,
     },
   });
+
+  const existingLesson = await prisma.lesson.findFirst({
+    where: { name: "Algebra Basics" },
+  });
+
+  if (existingLesson) {
+    await prisma.lesson.update({
+      where: { id: existingLesson.id },
+      data: {
+        day: Weekday.MONDAY,
+        startTime: "09:00",
+        endTime: "10:00",
+        subjectId: math.id,
+        classId: class5A.id,
+        teacherId: teacherProfile.id,
+      },
+    });
+  } else {
+    await prisma.lesson.create({
+      data: {
+        name: "Algebra Basics",
+        day: Weekday.MONDAY,
+        startTime: "09:00",
+        endTime: "10:00",
+        subjectId: math.id,
+        classId: class5A.id,
+        teacherId: teacherProfile.id,
+      },
+    });
+  }
+
+  const existingExam = await prisma.exam.findFirst({
+    where: { title: "Midterm Exam" },
+  });
+
+  const examData = {
+    date: new Date("2026-11-15"),
+    startTime: "09:00",
+    endTime: "11:00",
+    subjectId: math.id,
+    classId: class5A.id,
+    teacherId: teacherProfile.id,
+  };
+
+  const exam = existingExam
+    ? await prisma.exam.update({
+        where: { id: existingExam.id },
+        data: examData,
+      })
+    : await prisma.exam.create({
+        data: { title: "Midterm Exam", ...examData },
+      });
+
+  await prisma.examResult.upsert({
+    where: {
+      examId_studentId: { examId: exam.id, studentId: studentProfile.id },
+    },
+    update: { score: 88 },
+    create: { examId: exam.id, studentId: studentProfile.id, score: 88 },
+  });
+
+  const existingAssignment = await prisma.assignment.findFirst({
+    where: { title: "Essay: My School" },
+  });
+
+  const assignmentData = {
+    startDate: new Date("2026-11-01"),
+    dueDate: new Date("2026-11-10"),
+    subjectId: english.id,
+    classId: class5A.id,
+    teacherId: teacherProfile.id,
+  };
+
+  if (existingAssignment) {
+    await prisma.assignment.update({
+      where: { id: existingAssignment.id },
+      data: assignmentData,
+    });
+  } else {
+    await prisma.assignment.create({
+      data: { title: "Essay: My School", ...assignmentData },
+    });
+  }
+
+  await prisma.attendance.upsert({
+    where: {
+      studentId_date: {
+        studentId: studentProfile.id,
+        date: new Date("2026-11-05"),
+      },
+    },
+    update: { status: AttendanceStatus.PRESENT, classId: class5A.id },
+    create: {
+      studentId: studentProfile.id,
+      classId: class5A.id,
+      date: new Date("2026-11-05"),
+      status: AttendanceStatus.PRESENT,
+    },
+  });
+
+  const existingEvent = await prisma.event.findFirst({
+    where: { title: "Science Fair" },
+  });
+
+  const eventData = {
+    description: "Annual school-wide science exhibition",
+    date: new Date("2026-12-10"),
+    startTime: "09:00",
+    endTime: "15:00",
+    classId: null,
+  };
+
+  if (existingEvent) {
+    await prisma.event.update({ where: { id: existingEvent.id }, data: eventData });
+  } else {
+    await prisma.event.create({ data: { title: "Science Fair", ...eventData } });
+  }
 
   console.log("Development database seeded successfully.");
   console.log("Demo password for all accounts: password123");

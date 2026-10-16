@@ -2,10 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import InputField from "../InputField";
-import { createStudent, updateStudent } from "@/app/actions/student";
+import {
+  createStudent,
+  getStudentFormOptions,
+  updateStudent,
+} from "@/app/actions/student";
 
 const schema = z.object({
   email: z.string().email({ message: "Email is required" }),
@@ -20,9 +24,12 @@ const schema = z.object({
   studentNumber: z.string().min(1, { message: "Student number is required" }),
   phone: z.string().optional(),
   address: z.string().optional(),
+  schoolClassId: z.string().optional(),
 });
 
 type Inputs = z.infer<typeof schema>;
+
+type ClassOption = { id: string; name: string; grade: number };
 
 const StudentForm = ({
   type,
@@ -34,6 +41,8 @@ const StudentForm = ({
   onSuccess?: () => void;
 }) => {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const {
     register,
     handleSubmit,
@@ -41,6 +50,26 @@ const StudentForm = ({
   } = useForm<Inputs>({
     resolver: zodResolver(schema),
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getStudentFormOptions()
+      .then((options) => {
+        if (isMounted) {
+          setClasses(options.classes);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingClasses(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const onSubmit = handleSubmit(async (formData) => {
     setServerError(null);
@@ -134,6 +163,24 @@ const StudentForm = ({
           register={register}
           error={errors?.address}
         />
+        <div className="flex flex-col gap-2 w-full md:w-1/4">
+          <label className="text-xs text-gray-500">Class</label>
+          <select
+            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+            {...register("schoolClassId")}
+            defaultValue={data?.schoolClassId ?? ""}
+            disabled={isLoadingClasses}
+          >
+            <option value="">
+              {isLoadingClasses ? "Loading..." : "Not enrolled"}
+            </option>
+            {classes.map((schoolClass) => (
+              <option key={schoolClass.id} value={schoolClass.id}>
+                {schoolClass.name} (Grade {schoolClass.grade})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       {serverError && <p className="text-sm text-red-500">{serverError}</p>}
       <button className="bg-blue-400 text-white p-2 rounded-md">

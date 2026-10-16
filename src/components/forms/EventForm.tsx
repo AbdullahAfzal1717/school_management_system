@@ -2,38 +2,36 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import InputField from "../InputField";
-import Image from "next/image";
+import { createEvent, getEventFormOptions, updateEvent } from "@/app/actions/event";
 
 const schema = z.object({
-  username: z
-    .string()
-    .min(3, { message: "Username should be atleast 3 characters long" })
-    .max(20, { message: "Username should have atmost 20 character" }),
-  email: z.string().email({ message: "Email is required" }),
-  password: z
-    .string()
-    .min(8, { message: "Password should be atleast 8 characters long" }),
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-  phone: z.string().min(1, { message: "Phone is required" }),
-  address: z.string().min(1, { message: "Address is required" }),
-  bloodType: z.string().min(1, { message: "Blood Type is required" }),
-  birthday: z.date({ message: "Birthday is required" }),
-  sex: z.enum(["male", "female"], { message: "Sex is required" }),
-  img: z.instanceof(File, { message: "Image is required" }),
+  title: z.string().min(1, { message: "Title is required" }),
+  description: z.string().optional(),
+  date: z.string().min(1, { message: "Date is required" }),
+  startTime: z.string().min(1, { message: "Start time is required" }),
+  endTime: z.string().min(1, { message: "End time is required" }),
+  classId: z.string().optional(),
 });
 
 type Inputs = z.infer<typeof schema>;
 
+type Option = { id: string; name: string };
+
 const EventForm = ({
   type,
   data,
+  onSuccess,
 }: {
   type: "create" | "edit";
   data?: any;
+  onSuccess?: () => void;
 }) => {
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<Option[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const {
     register,
     handleSubmit,
@@ -42,120 +40,108 @@ const EventForm = ({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
+  useEffect(() => {
+    let isMounted = true;
+
+    getEventFormOptions()
+      .then((options) => {
+        if (isMounted) {
+          setClasses(options.classes);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingOptions(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const onSubmit = handleSubmit(async (formData) => {
+    setServerError(null);
+    const result =
+      type === "create"
+        ? await createEvent(formData)
+        : await updateEvent({ ...formData, id: data?.id ?? "" });
+
+    if ("error" in result) {
+      setServerError(result.error);
+      return;
+    }
+
+    onSuccess?.();
   });
+
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className=" text-xl font-semibold">Create a new Event</h1>
-      <span className="text-xs text-gray-400 font-medium">
-        Authentication Information
-      </span>
+      <h1 className=" text-xl font-semibold">
+        {type === "create" ? "Create a new Event" : "Edit Event"}
+      </h1>
       <div className="flex justify-between gap-4 flex-wrap">
         <InputField
-          label="Username"
-          name="username"
-          defaultValue={data?.username}
+          label="Title"
+          name="title"
+          defaultValue={data?.title}
           register={register}
-          error={errors?.username}
+          error={errors?.title}
         />
         <InputField
-          label="Email"
-          name="email"
-          type="email"
-          defaultValue={data?.email}
-          register={register}
-          error={errors?.email}
-        />
-        <InputField
-          label="Password"
-          name="password"
-          type="password"
-          defaultValue={data?.password}
-          register={register}
-          error={errors?.password}
-        />
-      </div>
-      <span className="text-xs text-gray-400 font-medium">
-        Personal Information
-      </span>
-      <div className="flex justify-between gap-4 flex-wrap">
-        <InputField
-          label="FirstName"
-          name="firstName"
-          defaultValue={data?.firstName}
-          register={register}
-          error={errors?.firstName}
-        />
-        <InputField
-          label="LastName"
-          name="lastName"
-          defaultValue={data?.lastName}
-          register={register}
-          error={errors?.lastName}
-        />
-        <InputField
-          label="Phone"
-          name="phone"
-          defaultValue={data?.phone}
-          register={register}
-          error={errors?.phone}
-        />
-        <InputField
-          label="Address"
-          name="address"
-          defaultValue={data?.address}
-          register={register}
-          error={errors?.address}
-        />
-        <InputField
-          label="Blood Type"
-          name="bloodType"
-          defaultValue={data?.bloodType}
-          register={register}
-          error={errors?.bloodType}
-        />
-        <InputField
-          label="Birthday"
-          name="birthday"
+          label="Date"
+          name="date"
           type="date"
-          defaultValue={data?.birthday}
+          defaultValue={data?.date}
           register={register}
-          error={errors?.birthday}
+          error={errors?.date}
         />
-
+        <InputField
+          label="Start Time"
+          name="startTime"
+          type="time"
+          defaultValue={data?.startTime}
+          register={register}
+          error={errors?.startTime}
+        />
+        <InputField
+          label="End Time"
+          name="endTime"
+          type="time"
+          defaultValue={data?.endTime}
+          register={register}
+          error={errors?.endTime}
+        />
         <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Sex</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("sex")}
-            defaultValue={data?.sex}
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          {errors.sex?.message && (
-            <p className="text-xs text-red-400">
-              {errors.sex.message.toString()}
-            </p>
+          <label className="text-xs text-gray-500">Class</label>
+          {isLoadingOptions ? (
+            <p className="text-sm text-gray-400">Loading...</p>
+          ) : (
+            <select
+              className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+              {...register("classId")}
+              defaultValue={data?.classId ?? ""}
+            >
+              <option value="">All classes</option>
+              {classes.map((schoolClass) => (
+                <option key={schoolClass.id} value={schoolClass.id}>
+                  {schoolClass.name}
+                </option>
+              ))}
+            </select>
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full md:w-1/4 justify-center">
-          <label
-            className="text-xs text-gray-500  flex items-center gap-2 cursor-pointer"
-            htmlFor="img"
-          >
-            <Image src="/upload.png" alt="" height={28} width={28} />
-            <span>Upload a photo</span>
-          </label>
-          <input id="img" type="file" {...register("img")} className="hidden" />
-          {errors.img?.message && (
-            <p className="text-xs text-red-400">
-              {errors.img.message.toString()}
-            </p>
-          )}
+        <div className="flex flex-col gap-2 w-full">
+          <label className="text-xs text-gray-500">Description</label>
+          <textarea
+            {...register("description")}
+            defaultValue={data?.description}
+            rows={3}
+            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+          />
         </div>
       </div>
+      {serverError && <p className="text-sm text-red-500">{serverError}</p>}
       <button className="bg-blue-400 text-white p-2 rounded-md">
         {type === "create" ? "Create" : "Update"}
       </button>

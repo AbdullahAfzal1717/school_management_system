@@ -19,6 +19,22 @@ enum UserRole {
   PARENT
 }
 
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -49,6 +65,9 @@ model TeacherProfile {
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   teachingAssignments TeachingAssignment[]
   supervisedClasses   SchoolClass[]        @relation("ClassSupervisor")
+  lessons             Lesson[]
+  exams               Exam[]
+  assignments         Assignment[]
 }
 
 model StudentProfile {
@@ -64,6 +83,8 @@ model StudentProfile {
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
   guardians   ParentStudent[]
+  examResults ExamResult[]
+  attendances Attendance[]
 }
 
 model ParentProfile {
@@ -102,6 +123,11 @@ model SchoolClass {
   supervisor          TeacherProfile?      @relation("ClassSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
   enrollments         Enrollment[]
   teachingAssignments TeachingAssignment[]
+  lessons             Lesson[]
+  exams               Exam[]
+  assignments         Assignment[]
+  attendances         Attendance[]
+  events              Event[]
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
@@ -111,6 +137,9 @@ model Subject {
   id                  String               @id @default(cuid())
   name                String               @unique
   teachingAssignments TeachingAssignment[]
+  lessons             Lesson[]
+  exams               Exam[]
+  assignments         Assignment[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 }
@@ -155,4 +184,114 @@ model TeachingAssignment {
 
   @@unique([teacherId, subjectId, schoolClassId, academicYearId])
   @@index([schoolClassId, academicYearId])
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  name      String
+  day       Weekday
+  startTime String
+  endTime   String
+  subjectId String
+  classId   String
+  teacherId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class   SchoolClass    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId])
+  @@index([classId])
+  @@index([teacherId])
+}
+
+model Exam {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  startTime String
+  endTime   String
+  subjectId String
+  classId   String
+  teacherId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class   SchoolClass    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  results ExamResult[]
+
+  @@index([subjectId])
+  @@index([classId])
+  @@index([teacherId])
+}
+
+model ExamResult {
+  id        String   @id @default(cuid())
+  score     Int
+  examId    String
+  studentId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exam    Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([studentId])
+}
+
+model Assignment {
+  id        String   @id @default(cuid())
+  title     String
+  startDate DateTime
+  dueDate   DateTime
+  subjectId String
+  classId   String
+  teacherId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class   SchoolClass    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId])
+  @@index([classId])
+  @@index([teacherId])
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  date      DateTime
+  status    AttendanceStatus
+  studentId String
+  classId   String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   SchoolClass    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([classId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  startTime   String
+  endTime     String
+  classId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  class SchoolClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  @@index([classId])
 }

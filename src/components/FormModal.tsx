@@ -5,6 +5,16 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { deleteStudent } from "@/app/actions/student";
+import { deleteTeacher } from "@/app/actions/teacher";
+import { deleteParent } from "@/app/actions/parent";
+import { deleteSubject } from "@/app/actions/subject";
+import { deleteClass } from "@/app/actions/class";
+import { deleteLesson } from "@/app/actions/lesson";
+import { deleteExam } from "@/app/actions/exam";
+import { deleteResult } from "@/app/actions/result";
+import { deleteAssignment } from "@/app/actions/assignment";
+import { deleteAttendance } from "@/app/actions/attendance";
+import { deleteEvent } from "@/app/actions/event";
 
 const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
   loading: () => <h1>Loading....</h1>,
@@ -30,19 +40,39 @@ const forms: {
     onSuccess?: () => void,
   ) => JSX.Element;
 } = {
-  teacher: (type, data) => <TeacherForm type={type} data={data} />,
+  teacher: (type, data, onSuccess) => (
+    <TeacherForm type={type} data={data} onSuccess={onSuccess} />
+  ),
   student: (type, data, onSuccess) => (
     <StudentForm type={type} data={data} onSuccess={onSuccess} />
   ),
-  parent: (type, data) => <ParentForm type={type} data={data} />,
-  subject: (type, data) => <SubjectForm type={type} data={data} />,
-  class: (type, data) => <ClassForm type={type} data={data} />,
-  lesson: (type, data) => <LessonForm type={type} data={data} />,
-  exam: (type, data) => <ExamForm type={type} data={data} />,
-  assignment: (type, data) => <AssignmentForm type={type} data={data} />,
-  result: (type, data) => <ResultForm type={type} data={data} />,
-  attendence: (type, data) => <AttendenceForm type={type} data={data} />,
-  event: (type, data) => <EventForm type={type} data={data} />,
+  parent: (type, data, onSuccess) => (
+    <ParentForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  subject: (type, data, onSuccess) => (
+    <SubjectForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  class: (type, data, onSuccess) => (
+    <ClassForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  lesson: (type, data, onSuccess) => (
+    <LessonForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  exam: (type, data, onSuccess) => (
+    <ExamForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  assignment: (type, data, onSuccess) => (
+    <AssignmentForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  result: (type, data, onSuccess) => (
+    <ResultForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  attendence: (type, data, onSuccess) => (
+    <AttendenceForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  event: (type, data, onSuccess) => (
+    <EventForm type={type} data={data} onSuccess={onSuccess} />
+  ),
   announcement: (type, data) => <AnnouncementForm type={type} data={data} />,
 };
 
@@ -88,12 +118,40 @@ const FormModal = ({
     event.preventDefault();
     setServerError(null);
 
-    if (table !== "student" || typeof id !== "string") {
+    if (typeof id !== "string") {
       setServerError("Delete is not available for this resource yet.");
       return;
     }
 
-    const result = await deleteStudent(id);
+    const result =
+      table === "student"
+        ? await deleteStudent(id)
+        : table === "teacher"
+          ? await deleteTeacher(id)
+          : table === "parent"
+            ? await deleteParent(id)
+            : table === "subject"
+              ? await deleteSubject(id)
+              : table === "class"
+                ? await deleteClass(id)
+                : table === "lesson"
+                  ? await deleteLesson(id)
+                  : table === "exam"
+                    ? await deleteExam(id)
+                    : table === "result"
+                      ? await deleteResult(id)
+                      : table === "assignment"
+                        ? await deleteAssignment(id)
+                        : table === "attendence"
+                          ? await deleteAttendance(id)
+                          : table === "event"
+                            ? await deleteEvent(id)
+                            : null;
+
+    if (!result) {
+      setServerError("Delete is not available for this resource yet.");
+      return;
+    }
 
     if ("error" in result) {
       setServerError(result.error);

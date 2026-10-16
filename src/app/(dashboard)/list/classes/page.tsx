@@ -2,16 +2,22 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { classesData, role } from "@/lib/data";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
-import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 type Class = {
-  id: number;
+  id: string;
   name: string;
   capacity: number;
+  enrolled: number;
   grade: number;
   supervisor: string;
+  academicYearId: string;
+  supervisorId: string;
 };
 
 const columns = [
@@ -20,7 +26,7 @@ const columns = [
     accessor: "name",
   },
   {
-    header: "Capacity",
+    header: "Enrolled / Capacity",
     accessor: "capacity",
     className: "hidden md:table-cell",
   },
@@ -41,7 +47,32 @@ const columns = [
   },
 ];
 
-const ClassListPage = () => {
+const ClassListPage = async () => {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role || "";
+
+  const classes = await prisma.schoolClass.findMany({
+    include: {
+      supervisor: { include: { user: true } },
+      academicYear: true,
+      _count: { select: { enrollments: true } },
+    },
+    orderBy: [{ grade: "asc" }, { name: "asc" }],
+  });
+
+  const data: Class[] = classes.map((schoolClass) => ({
+    id: schoolClass.id,
+    name: schoolClass.name,
+    capacity: schoolClass.capacity,
+    enrolled: schoolClass._count.enrollments,
+    grade: schoolClass.grade,
+    supervisor: schoolClass.supervisor
+      ? `${schoolClass.supervisor.user.firstName} ${schoolClass.supervisor.user.lastName}`
+      : "No supervisor",
+    academicYearId: schoolClass.academicYearId,
+    supervisorId: schoolClass.supervisorId ?? "",
+  }));
+
   const renderRow = (item: Class) => (
     <tr
       key={item.id}
@@ -50,12 +81,14 @@ const ClassListPage = () => {
       <td className="flex items-center gap-4 p-4">
         <h3 className="font-semibold">{item.name}</h3>
       </td>
-      <td className="hidden md:table-cell">{item.capacity}</td>
+      <td className="hidden md:table-cell">
+        {item.enrolled} / {item.capacity}
+      </td>
       <td className="hidden lg:table-cell">{item.grade}</td>
       <td className="hidden lg:table-cell">{item.supervisor}</td>
       <td>
         <div className="flex gap-2 items-center">
-        {role === "admin" && (
+          {role && role === "ADMIN" && (
             <>
               <FormModal type="edit" table="class" data={item} />
               <FormModal type="delete" table="class" id={item.id} />
@@ -80,15 +113,14 @@ const ClassListPage = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-AbYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && (
-             
-                <FormModal type="create" table="class" />
+            {role && role === "ADMIN" && (
+              <FormModal type="create" table="class" />
             )}
           </div>
         </div>
       </div>
       {/* Table */}
-      <Table columns={columns} renderRow={renderRow} data={classesData} />
+      <Table columns={columns} renderRow={renderRow} data={data} />
       {/* Pagination */}
       <Pagination />
     </div>
