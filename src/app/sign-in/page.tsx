@@ -5,6 +5,15 @@ import { Eye, EyeOff } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const DEMO_ACCOUNTS = [
+  { label: "Admin", email: "admin@school.local" },
+  { label: "Teacher", email: "teacher@school.local" },
+  { label: "Student", email: "student@school.local" },
+  { label: "Parent", email: "parent@school.local" },
+] as const;
+
+const DEMO_PASSWORD = "password123";
+
 const LoginPage = () => {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -83,9 +92,36 @@ const LoginPage = () => {
         >
           {isSubmitting ? "Signing in..." : "Sign in"}
         </button>
-        <p className="mt-4 text-xs text-gray-500">
-          Development account: admin@school.local / password123
-        </p>
+        <div className="mt-6 rounded-md border border-dashed border-gray-300 bg-gray-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Demo accounts
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Click one to fill the form. Password for all:{" "}
+            <span className="font-mono text-gray-700">{DEMO_PASSWORD}</span>
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {DEMO_ACCOUNTS.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => {
+                  setEmail(account.email);
+                  setPassword(DEMO_PASSWORD);
+                  setError(null);
+                }}
+                className="rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-xs transition-colors hover:border-sky-300 hover:bg-sky-50"
+              >
+                <span className="block font-medium text-gray-700">
+                  {account.label}
+                </span>
+                <span className="block truncate text-gray-400">
+                  {account.email}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </form>
     </main>
   );
