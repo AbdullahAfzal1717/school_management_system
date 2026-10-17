@@ -49,6 +49,10 @@ model User {
   studentProfile StudentProfile?
   parentProfile  ParentProfile?
 
+  announcements    Announcement[] @relation("AnnouncementAuthor")
+  sentMessages     Message[]      @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+
   @@index([role])
 }
 
@@ -128,6 +132,7 @@ model SchoolClass {
   assignments         Assignment[]
   attendances         Attendance[]
   events              Event[]
+  announcements       Announcement[]
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
@@ -294,4 +299,37 @@ model Event {
   class SchoolClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
 
   @@index([classId])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  date      DateTime
+  classId   String?
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  class  SchoolClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  author User?        @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([classId])
+  @@index([authorId])
+  @@index([date])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  subject    String
+  body       String
+  sentAt     DateTime @default(now())
+  read       Boolean  @default(false)
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
 }

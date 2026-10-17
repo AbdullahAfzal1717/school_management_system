@@ -12,85 +12,85 @@ const menuItems = [
         icon: "/home.png",
         label: "Home",
         href: "/",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/teacher.png",
         label: "Teachers",
         href: "/list/teachers",
-        visible: ["admin", "teacher"],
+        visible: ["ADMIN", "TEACHER"],
       },
       {
         icon: "/student.png",
         label: "Students",
         href: "/list/students",
-        visible: ["admin", "teacher"],
+        visible: ["ADMIN", "TEACHER"],
       },
       {
         icon: "/parent.png",
         label: "Parents",
         href: "/list/parents",
-        visible: ["admin", "teacher"],
+        visible: ["ADMIN", "TEACHER"],
       },
       {
         icon: "/subject.png",
         label: "Subjects",
         href: "/list/subjects",
-        visible: ["admin"],
+        visible: ["ADMIN"],
       },
       {
         icon: "/class.png",
         label: "Classes",
         href: "/list/classes",
-        visible: ["admin", "teacher"],
+        visible: ["ADMIN", "TEACHER"],
       },
       {
         icon: "/lesson.png",
         label: "Lessons",
         href: "/list/lessons",
-        visible: ["admin", "teacher"],
+        visible: ["ADMIN", "TEACHER"],
       },
       {
         icon: "/exam.png",
         label: "Exams",
         href: "/list/exams",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/assignment.png",
         label: "Assignments",
         href: "/list/assignments",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/result.png",
         label: "Results",
         href: "/list/results",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/attendance.png",
         label: "Attendance",
         href: "/list/attendance",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/calendar.png",
         label: "Events",
         href: "/list/events",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/message.png",
         label: "Messages",
         href: "/list/messages",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/announcement.png",
         label: "Announcements",
         href: "/list/announcements",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
     ],
   },
@@ -101,19 +101,19 @@ const menuItems = [
         icon: "/profile.png",
         label: "Profile",
         href: "/profile",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/setting.png",
         label: "Settings",
         href: "/settings",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
       {
         icon: "/logout.png",
         label: "Logout",
         href: "#",
-        visible: ["admin", "teacher", "student", "parent"],
+        visible: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
       },
     ],
   },
@@ -139,7 +139,7 @@ const Menu = async () => {
                 <Link
               href={item.href}
               key={item.label}
-              className="flex justify-center items-center lg:justify-start gap-4 text-gray-500 py-2 rounded-md hover:bg-AbSkyLight md:px-2"
+              className="flex justify-center items-center lg:justify-start gap-4 text-gray-500 py-2 rounded-md hover:bg-AbSkyLight focus-visible:bg-AbSkyLight focus-visible:outline-none md:px-2"
               >
               <Image src={item.icon} alt={item.label} width={20} height={20} />
               <span className="hidden lg:block">{item.label}</span>

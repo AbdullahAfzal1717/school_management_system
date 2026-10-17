@@ -28,7 +28,7 @@ const InputField = ({
   const inputType = isPassword && !showPassword ? "password" : type;
 
   return (
-    <div className="flex flex-col gap-2 w-full md:w-1/4">
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
       <label className="text-xs text-gray-500">{label}</label>
       <div className="relative">
         <input

@@ -1,21 +1,25 @@
 "use client";
 
-import { PieChart, Pie, ResponsiveContainer } from "recharts";
-import Image from "next/image";
+import { Pie, PieChart, ResponsiveContainer } from "recharts";
 
-const data = [
-  { name: "Group A", value: 92, fill: "#C3EBFA" },
-  { name: "Group B", value: 8, fill: "#FAE27C" },
-];
+const PerformanceChart = ({
+  score,
+  label,
+}: {
+  score: number;
+  label: string;
+}) => {
+  const value = Math.max(0, Math.min(100, Math.round(score)));
+  const data = [
+    { name: "Score", value, fill: "#C3EBFA" },
+    { name: "Remaining", value: 100 - value, fill: "#FAE27C" },
+  ];
 
-const PerformanceChart = () => {
   return (
     <div className="rounded-md p-4 bg-white h-80 relative">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Performance</h1>
-        <Image src="/moreDark.png" alt="" width={20} height={20} />
       </div>
-
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -30,13 +34,12 @@ const PerformanceChart = () => {
           />
         </PieChart>
       </ResponsiveContainer>
-
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-        <h2 className=" text-3xl font-bold">9.2</h2>
-        <p className="text-xs text-gray-500">of 10 max TS</p>
+        <h2 className="text-3xl font-bold">{(value / 10).toFixed(1)}</h2>
+        <p className="text-xs text-gray-500">of 10</p>
       </div>
       <div className="absolute left-0 right-0 bottom-16 m-auto text-center font-medium">
-        1st Semester - 2nd Semester
+        {label}
       </div>
     </div>
   );

@@ -15,6 +15,8 @@ import { deleteResult } from "@/app/actions/result";
 import { deleteAssignment } from "@/app/actions/assignment";
 import { deleteAttendance } from "@/app/actions/attendance";
 import { deleteEvent } from "@/app/actions/event";
+import { deleteAnnouncement } from "@/app/actions/announcement";
+import { deleteMessage } from "@/app/actions/message";
 
 const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
   loading: () => <h1>Loading....</h1>,
@@ -32,6 +34,7 @@ const ResultForm = dynamic(() => import("./forms/ResultForm"));
 const AttendenceForm = dynamic(() => import("./forms/AttendenceForm"));
 const EventForm = dynamic(() => import("./forms/EventForm"));
 const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"));
+const MessageForm = dynamic(() => import("./forms/MessageForm"));
 
 const forms: {
   [key: string]: (
@@ -73,7 +76,12 @@ const forms: {
   event: (type, data, onSuccess) => (
     <EventForm type={type} data={data} onSuccess={onSuccess} />
   ),
-  announcement: (type, data) => <AnnouncementForm type={type} data={data} />,
+  announcement: (type, data, onSuccess) => (
+    <AnnouncementForm type={type} data={data} onSuccess={onSuccess} />
+  ),
+  message: (type, data, onSuccess) => (
+    <MessageForm type={type} data={data} onSuccess={onSuccess} />
+  ),
 };
 
 const FormModal = ({
@@ -94,7 +102,8 @@ const FormModal = ({
     | "result"
     | "attendence"
     | "event"
-    | "announcement";
+    | "announcement"
+    | "message";
 
   type: "create" | "edit" | "delete";
 
@@ -146,7 +155,11 @@ const FormModal = ({
                           ? await deleteAttendance(id)
                           : table === "event"
                             ? await deleteEvent(id)
-                            : null;
+                            : table === "announcement"
+                              ? await deleteAnnouncement(id)
+                              : table === "message"
+                                ? await deleteMessage(id)
+                                : null;
 
     if (!result) {
       setServerError("Delete is not available for this resource yet.");
@@ -172,7 +185,10 @@ const FormModal = ({
         {serverError && (
           <p className="text-center text-sm text-red-500">{serverError}</p>
         )}
-        <button className=" bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
+        <button
+          type="submit"
+          className="btn bg-red-700 text-white py-2 px-4 w-max self-center"
+        >
           Delete
         </button>
       </form>
@@ -186,21 +202,31 @@ const FormModal = ({
   return (
     <>
       <button
-        className={`${size} flex items-center justify-center rounded-full ${bgColor}`}
+        type="button"
+        className={`icon-btn ${size} ${bgColor}`}
+        aria-label={
+          type === "create"
+            ? `Create ${table}`
+            : type === "edit"
+              ? `Edit ${table}`
+              : `Delete ${table}`
+        }
         onClick={() => setOpen(true)}
       >
         <Image src={`/${type}.png`} alt="" width={16} height={16} />
       </button>
       {open && (
-        <div className="w-screen h-screen absolute left-0 top-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-md relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%] ">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-6">
+          <div className="relative my-4 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-md bg-white p-4 sm:p-6">
             <Form />
-            <div
-              className="absolute top-4 right-4 cursor-pointer"
+            <button
+              type="button"
+              className="icon-btn absolute top-4 right-4 h-7 w-7"
+              aria-label="Close"
               onClick={() => setOpen(false)}
             >
               <Image src="/close.png" alt="" width={14} height={14} />
-            </div>
+            </button>
           </div>
         </div>
       )}

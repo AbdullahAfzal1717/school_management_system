@@ -9,22 +9,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <div className="h-screen flex">
-        {/* Left */}
-        <div className="w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%] p-4">
-          <Link href="/" className="flex justify-center items-center lg:justify-start gap-2 ">
-          <Image src='/logo.png' alt="logo" width={32} height={32} />
-          <span className="hidden lg:block font-bold">NUML</span>   
-          </Link>
-          <Menu/>
-              </div>
-        {/* Right */}
-        <div className="w-[86%] md:w-[92%] lg:w-[84%] xl:w-[86%] bg-[#F7FBFA] overflow-scroll flex flex-col">
-          <Navbar/>
-          {children}
+    <div className="flex h-screen overflow-hidden">
+      <aside className="flex h-full w-[4.5rem] shrink-0 flex-col overflow-hidden border-r border-gray-100 bg-white p-2 sm:w-20 lg:w-60 lg:p-4">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center justify-center gap-2 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 lg:justify-start"
+        >
+          <Image src="/logo.png" alt="School logo" width={32} height={32} />
+          <span className="hidden font-bold lg:block">School</span>
+        </Link>
+        <div className="sidebar-scroll mt-2 min-h-0 flex-1 overflow-y-scroll overscroll-contain pr-1">
+          <Menu />
         </div>
+      </aside>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#F7FBFA]">
+        <Navbar />
+        {children}
       </div>
-    </html>
+    </div>
   );
 }

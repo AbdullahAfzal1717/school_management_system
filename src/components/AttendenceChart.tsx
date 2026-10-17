@@ -1,59 +1,40 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import {
-  BarChart,
   Bar,
-  Rectangle,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
   Legend,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
-const data = [
-  {
-    name: "Mon",
-    Present: 70,
-    Absent: 30,
-  },
-  {
-    name: "Tue",
-    Present: 50,
-    Absent: 50,
-  },
-  {
-    name: "Wed",
-    Present: 60,
-    Absent: 40,
-  },
-  {
-    name: "Thu",
-    Present: 80,
-    Absent: 20,
-  },
-  {
-    name: "Fri",
-    Present: 82,
-    Absent: 18,
-  },
-];
+export type AttendancePoint = {
+  name: string;
+  Present: number;
+  Absent: number;
+  Late: number;
+};
 
-import Image from "next/image";
-
-const AttendenceChart = () => {
+const AttendenceChart = ({ data }: { data: AttendancePoint[] }) => {
   return (
-    <div className="bg-white rounded-xl w-full h-full p-4 ">
-      {/* Title */}
+    <div className="bg-white rounded-xl w-full h-full p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-lg font-semibold">Attendence</h1>
-        <Image src="/moreDark.png" alt="" width={20} height={20} />
+        <h1 className="min-w-0 text-base font-semibold sm:text-lg">Attendance</h1>
+        <Link
+          href="/list/attendance"
+          aria-label="View attendance"
+          className="icon-btn h-7 w-7"
+        >
+          <Image src="/moreDark.png" alt="" width={20} height={20} />
+        </Link>
       </div>
-
-      {/* Chart */}
       <ResponsiveContainer width="100%" height="90%">
-        <BarChart width={500} height={300} data={data} barSize={20}>
+        <BarChart data={data} barSize={16}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ddd" />
           <XAxis
             dataKey="name"
@@ -70,18 +51,9 @@ const AttendenceChart = () => {
             verticalAlign="top"
             wrapperStyle={{ paddingTop: "20px", paddingBottom: "40px" }}
           />
-          <Bar
-            dataKey="Present"
-            fill="#FAE27C"
-            legendType="circle"
-            radius={[10,10,0,0]}
-          />
-          <Bar
-            dataKey="Absent"
-            fill="#C3EBFA"
-            legendType="circle"
-            radius={[10,10,0,0]}
-          />
+          <Bar dataKey="Present" fill="#FAE27C" legendType="circle" radius={[10, 10, 0, 0]} />
+          <Bar dataKey="Absent" fill="#C3EBFA" legendType="circle" radius={[10, 10, 0, 0]} />
+          <Bar dataKey="Late" fill="#CFCEFF" legendType="circle" radius={[10, 10, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

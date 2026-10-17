@@ -1,26 +1,19 @@
-# Lama Dev School Management Dashboard
+# School Management System
 
-## Getting Started
+A Next.js dashboard for students, teachers, parents, classes, lessons, exams, results, attendance, events, announcements, and messages.
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Demo password for every account: `password123`
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Lama Dev Youtube Channel](https://youtube.com/lamadev) 
-- [Next.js](https://nextjs.org/learn)
+- admin@school.local
+- teacher@school.local
+- student@school.local
+- parent@school.local

@@ -2,7 +2,8 @@
 
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
-import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const DEMO_ACCOUNTS = [
@@ -16,6 +17,11 @@ const DEMO_PASSWORD = "password123";
 
 const LoginPage = () => {
   const router = useRouter();
+  const [accountCreated, setAccountCreated] = useState(false);
+
+  useEffect(() => {
+    setAccountCreated(new URLSearchParams(window.location.search).get("created") === "1");
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -47,12 +53,17 @@ const LoginPage = () => {
     <main className="min-h-screen flex items-center justify-center bg-[#F7FBFA] p-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-md bg-white p-8 shadow-sm"
+        className="w-full max-w-md rounded-md bg-white p-5 shadow-sm sm:p-8"
       >
         <h1 className="text-2xl font-semibold">Sign in</h1>
         <p className="mt-2 text-sm text-gray-500">
           Use your school account to continue.
         </p>
+        {accountCreated && (
+          <p className="mt-3 text-sm text-green-600">
+            Account created. Sign in with your new email.
+          </p>
+        )}
         <label className="mt-6 flex flex-col gap-2 text-sm">
           Email
           <input
@@ -121,6 +132,14 @@ const LoginPage = () => {
               </button>
             ))}
           </div>
+        </div>
+        <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm">
+          <Link href="/forgot-password" className="text-sky-600 hover:underline">
+            Forgot password
+          </Link>
+          <Link href="/sign-up" className="text-sky-600 hover:underline">
+            Create parent account
+          </Link>
         </div>
       </form>
     </main>
